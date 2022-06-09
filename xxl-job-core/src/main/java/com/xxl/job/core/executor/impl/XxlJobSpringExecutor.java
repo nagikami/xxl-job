@@ -92,6 +92,7 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
                         new MethodIntrospector.MetadataLookup<XxlJob>() {
                             @Override
                             public XxlJob inspect(Method method) {
+                                // 返回方法对应注解的融合结果（相同注解的属性合并到第一个注解）
                                 return AnnotatedElementUtils.findMergedAnnotation(method, XxlJob.class);
                             }
                         });
