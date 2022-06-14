@@ -25,6 +25,7 @@ import java.util.List;
 @RequestMapping("/api")
 public class JobApiController {
 
+    // AdminBizImpl
     @Resource
     private AdminBiz adminBiz;
 
