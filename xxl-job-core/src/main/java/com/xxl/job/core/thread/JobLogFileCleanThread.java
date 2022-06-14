@@ -29,7 +29,7 @@ public class JobLogFileCleanThread {
     private volatile boolean toStop = false;
     public void start(final long logRetentionDays){
 
-        // limit min value
+        // limit min value 清理时间小于三天无效
         if (logRetentionDays < 3 ) {
             return;
         }
@@ -58,6 +58,7 @@ public class JobLogFileCleanThread {
                                 if (!childFile.isDirectory()) {
                                     continue;
                                 }
+                                // 排除非日志目录
                                 if (childFile.getName().indexOf("-") == -1) {
                                     continue;
                                 }
@@ -73,7 +74,7 @@ public class JobLogFileCleanThread {
                                 if (logFileCreateDate == null) {
                                     continue;
                                 }
-
+                                // 递归删除满足过期条件的目录及其包含的文件
                                 if ((todayDate.getTime()-logFileCreateDate.getTime()) >= logRetentionDays * (24 * 60 * 60 * 1000) ) {
                                     FileUtil.deleteRecursively(childFile);
                                 }
@@ -100,6 +101,7 @@ public class JobLogFileCleanThread {
 
             }
         });
+        // 设为守护线程，当jvm只有守护线程时程序退出
         localThread.setDaemon(true);
         localThread.setName("xxl-job, executor JobLogFileCleanThread");
         localThread.start();

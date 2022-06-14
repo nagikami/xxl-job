@@ -84,7 +84,7 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
         // init job handler from method
         String[] beanDefinitionNames = applicationContext.getBeanNamesForType(Object.class, false, true);
         for (String beanDefinitionName : beanDefinitionNames) {
-            Object bean = applicationContext.getBean(beanDefinitionName);
+            Object  bean = applicationContext.getBean(beanDefinitionName);
 
             Map<Method, XxlJob> annotatedMethods = null;   // referred to ：org.springframework.context.event.EventListenerMethodProcessor.processBean
             try {

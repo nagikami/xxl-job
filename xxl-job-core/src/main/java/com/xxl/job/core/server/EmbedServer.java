@@ -34,15 +34,20 @@ public class EmbedServer {
     private Thread thread;
 
     public void start(final String address, final int port, final String appname, final String accessToken) {
+        // 构造执行器
         executorBiz = new ExecutorBizImpl();
         thread = new Thread(new Runnable() {
 
             @Override
             public void run() {
+                /**
+                 * 使用netty作为rpc通信组件
+                 */
 
-                // param
+                // param 创建bossGroup（管理连接创建）、workerGroup（管理通道读写）线程组
                 EventLoopGroup bossGroup = new NioEventLoopGroup();
                 EventLoopGroup workerGroup = new NioEventLoopGroup();
+                // 初始化线程池
                 ThreadPoolExecutor bizThreadPool = new ThreadPoolExecutor(
                         0,
                         200,
@@ -52,19 +57,21 @@ public class EmbedServer {
                         new ThreadFactory() {
                             @Override
                             public Thread newThread(Runnable r) {
+                                // 设置线程名format
                                 return new Thread(r, "xxl-rpc, EmbedServer bizThreadPool-" + r.hashCode());
                             }
                         },
                         new RejectedExecutionHandler() {
                             @Override
                             public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                                // 设置拒绝策略为抛出运行时异常
                                 throw new RuntimeException("xxl-job, EmbedServer bizThreadPool is EXHAUSTED!");
                             }
                         });
 
 
                 try {
-                    // start server
+                    // start server 配置服务端设置
                     ServerBootstrap bootstrap = new ServerBootstrap();
                     bootstrap.group(bossGroup, workerGroup)
                             .channel(NioServerSocketChannel.class)
@@ -72,9 +79,11 @@ public class EmbedServer {
                                 @Override
                                 public void initChannel(SocketChannel channel) throws Exception {
                                     channel.pipeline()
+                                            // 添加空闲处理器，读写空闲超过90秒返回事件给EmbedHttpServerHandler的userEventTriggered方法处理
                                             .addLast(new IdleStateHandler(0, 0, 30 * 3, TimeUnit.SECONDS))  // beat 3N, close if idle
                                             .addLast(new HttpServerCodec())
                                             .addLast(new HttpObjectAggregator(5 * 1024 * 1024))  // merge request & reponse to FULL
+                                            // 自定义入站handler
                                             .addLast(new EmbedHttpServerHandler(executorBiz, accessToken, bizThreadPool));
                                 }
                             })
@@ -141,12 +150,19 @@ public class EmbedServer {
         private ExecutorBiz executorBiz;
         private String accessToken;
         private ThreadPoolExecutor bizThreadPool;
+        // 构造handler
         public EmbedHttpServerHandler(ExecutorBiz executorBiz, String accessToken, ThreadPoolExecutor bizThreadPool) {
             this.executorBiz = executorBiz;
             this.accessToken = accessToken;
             this.bizThreadPool = bizThreadPool;
         }
 
+        /**
+         * 处理通道读事件
+         * @param ctx handler上下文，包含handler、channel、pipeline等
+         * @param msg 接收到的信息
+         * @throws Exception
+         */
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx, FullHttpRequest msg) throws Exception {
 
@@ -155,10 +171,11 @@ public class EmbedServer {
             String requestData = msg.content().toString(CharsetUtil.UTF_8);
             String uri = msg.uri();
             HttpMethod httpMethod = msg.method();
+            // 判断当前连接状态是否为open
             boolean keepAlive = HttpUtil.isKeepAlive(msg);
             String accessTokenReq = msg.headers().get(XxlJobRemotingUtil.XXL_JOB_ACCESS_TOKEN);
 
-            // invoke
+            // invoke 调用执行器方法，执行调度器发送的任务
             bizThreadPool.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -176,24 +193,27 @@ public class EmbedServer {
 
         private Object process(HttpMethod httpMethod, String uri, String requestData, String accessTokenReq) {
 
-            // valid
+            // valid 仅支持POST方法
             if (HttpMethod.POST != httpMethod) {
                 return new ReturnT<String>(ReturnT.FAIL_CODE, "invalid request, HttpMethod not support.");
             }
             if (uri==null || uri.trim().length()==0) {
                 return new ReturnT<String>(ReturnT.FAIL_CODE, "invalid request, uri-mapping empty.");
             }
+            // 安全校验
             if (accessToken!=null
                     && accessToken.trim().length()>0
                     && !accessToken.equals(accessTokenReq)) {
                 return new ReturnT<String>(ReturnT.FAIL_CODE, "The access token is wrong.");
             }
 
-            // services mapping
+            // services mapping 路由请求到对应方法（handler of ExecutorBizImpl）
             try {
                 if ("/beat".equals(uri)) {
+                    // 心跳响应
                     return executorBiz.beat();
                 } else if ("/idleBeat".equals(uri)) {
+                    // 请求体json字符串转换为参数对象（json string -> POJO）
                     IdleBeatParam idleBeatParam = GsonTool.fromJson(requestData, IdleBeatParam.class);
                     return executorBiz.idleBeat(idleBeatParam);
                 } else if ("/run".equals(uri)) {

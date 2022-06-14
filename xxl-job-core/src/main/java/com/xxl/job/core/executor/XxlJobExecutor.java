@@ -67,17 +67,17 @@ public class XxlJobExecutor  {
         // init logpath
         XxlJobFileAppender.initLogPath(logPath);
 
-        // init invoker, admin-client
+        // init invoker, admin-client 初始化client对象列表（rpc调用器）
         initAdminBizList(adminAddresses, accessToken);
 
 
-        // init JobLogFileCleanThread
+        // init JobLogFileCleanThread 初始化任务日志清理线程（单例）
         JobLogFileCleanThread.getInstance().start(logRetentionDays);
 
-        // init TriggerCallbackThread
+        // init TriggerCallbackThread 初始化回调请求执行线程（单例）
         TriggerCallbackThread.getInstance().start();
 
-        // init executor-server
+        // init executor-server 初始化执行器服务端
         initEmbedServer(address, ip, port, appname, accessToken);
     }
     public void destroy(){
@@ -115,14 +115,16 @@ public class XxlJobExecutor  {
     private static List<AdminBiz> adminBizList;
     private void initAdminBizList(String adminAddresses, String accessToken) throws Exception {
         if (adminAddresses!=null && adminAddresses.trim().length()>0) {
+            // 遍历server列表
             for (String address: adminAddresses.trim().split(",")) {
                 if (address!=null && address.trim().length()>0) {
-
+                    // 为每一个server创建一个client
                     AdminBiz adminBiz = new AdminBizClient(address.trim(), accessToken);
 
                     if (adminBizList == null) {
                         adminBizList = new ArrayList<AdminBiz>();
                     }
+                    // 添加到client列表
                     adminBizList.add(adminBiz);
                 }
             }
@@ -187,7 +189,9 @@ public class XxlJobExecutor  {
         newJobThread.start();
         logger.info(">>>>>>>>>>> xxl-job regist JobThread success, jobId:{}, handler:{}", new Object[]{jobId, handler});
 
+        // 将当前线程放入线程表
         JobThread oldJobThread = jobThreadRepository.put(jobId, newJobThread);	// putIfAbsent | oh my god, map's put method return the old value!!!
+        // 若上次调度任未完成，直接终止
         if (oldJobThread != null) {
             oldJobThread.toStop(removeOldReason);
             oldJobThread.interrupt();

@@ -45,7 +45,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
 
     @Override
     public ReturnT<String> run(TriggerParam triggerParam) {
-        // load old：jobHandler + jobThread
+        // load old：jobHandler + jobThread 若当前存在任务对应的JobThread（代表当前任务的上一次调度任未执行完）则获取该线程，否则值为null
         JobThread jobThread = XxlJobExecutor.loadJobThread(triggerParam.getJobId());
         IJobHandler jobHandler = jobThread!=null?jobThread.getHandler():null;
         String removeOldReason = null;
@@ -53,11 +53,11 @@ public class ExecutorBizImpl implements ExecutorBiz {
         // valid：jobHandler + jobThread
         GlueTypeEnum glueTypeEnum = GlueTypeEnum.match(triggerParam.getGlueType());
         if (GlueTypeEnum.BEAN == glueTypeEnum) {
-
-            // new jobhandler
+            // handler类型为bean
+            // new jobHandler 获取注册的jobHandler
             IJobHandler newJobHandler = XxlJobExecutor.loadJobHandler(triggerParam.getExecutorHandler());
 
-            // valid old jobThread
+            // valid old jobThread 若jobHandler更新，终止当前执行线程
             if (jobThread!=null && jobHandler != newJobHandler) {
                 // change handler, need kill old thread
                 removeOldReason = "change jobhandler or glue type, and terminate the old job thread.";
@@ -70,6 +70,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
             if (jobHandler == null) {
                 jobHandler = newJobHandler;
                 if (jobHandler == null) {
+                    // jobHandler新值为null，返回处理器未发现错误响应
                     return new ReturnT<String>(ReturnT.FAIL_CODE, "job handler [" + triggerParam.getExecutorHandler() + "] not found.");
                 }
             }
@@ -122,12 +123,12 @@ public class ExecutorBizImpl implements ExecutorBiz {
         if (jobThread != null) {
             ExecutorBlockStrategyEnum blockStrategy = ExecutorBlockStrategyEnum.match(triggerParam.getExecutorBlockStrategy(), null);
             if (ExecutorBlockStrategyEnum.DISCARD_LATER == blockStrategy) {
-                // discard when running
+                // discard when running 当前线程继续执行上一次调度，丢弃当前调度，返回调度失败信息
                 if (jobThread.isRunningOrHasQueue()) {
                     return new ReturnT<String>(ReturnT.FAIL_CODE, "block strategy effect："+ExecutorBlockStrategyEnum.DISCARD_LATER.getTitle());
                 }
             } else if (ExecutorBlockStrategyEnum.COVER_EARLY == blockStrategy) {
-                // kill running jobThread
+                // kill running jobThread 停止上一次调度，触发当前调度
                 if (jobThread.isRunningOrHasQueue()) {
                     removeOldReason = "block strategy effect：" + ExecutorBlockStrategyEnum.COVER_EARLY.getTitle();
 
@@ -138,7 +139,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
             }
         }
 
-        // replace thread (new or exists invalid)
+        // replace thread (new or exists invalid) 创建线程执行任务并注册到线程表，终止未执行完的上次调度
         if (jobThread == null) {
             jobThread = XxlJobExecutor.registJobThread(triggerParam.getJobId(), jobHandler, removeOldReason);
         }

@@ -36,7 +36,7 @@ public class JobThread extends Thread{
 	private String stopReason;
 
     private boolean running = false;    // if running job
-	private int idleTimes = 0;			// idel times
+	private int idleTimes = 0;			// idle times
 
 
 	public JobThread(int jobId, IJobHandler handler) {
@@ -51,7 +51,7 @@ public class JobThread extends Thread{
 
     /**
      * new trigger to queue
-     *
+     * 添加handler参数到阻塞队列
      * @param triggerParam
      * @return
      */
@@ -75,7 +75,7 @@ public class JobThread extends Thread{
 	public void toStop(String stopReason) {
 		/**
 		 * Thread.interrupt只支持终止线程的阻塞状态(wait、join、sleep)，
-		 * 在阻塞出抛出InterruptedException异常,但是并不会终止运行的线程本身；
+		 * 在阻塞处抛出InterruptedException异常,但是并不会终止运行的线程本身；
 		 * 所以需要注意，此处彻底销毁本线程，需要通过共享变量方式；
 		 */
 		this.toStop = true;
@@ -95,22 +95,25 @@ public class JobThread extends Thread{
 
     	// init
     	try {
+			// 调用处理器init方法
 			handler.init();
 		} catch (Throwable e) {
     		logger.error(e.getMessage(), e);
 		}
 
-		// execute
+		// execute 执行处理器方法
 		while(!toStop){
 			running = false;
 			idleTimes++;
 
             TriggerParam triggerParam = null;
             try {
-				// to check toStop signal, we need cycle, so wo cannot use queue.take(), instand of poll(timeout)
+				// to check toStop signal, we need cycle, so wo cannot use queue.take(), instead of poll(timeout)
+				// 需要通过循环检查toStop变量，所以不能使用阻塞的take方法，需要使用有阻塞超时时间的poll方法
 				triggerParam = triggerQueue.poll(3L, TimeUnit.SECONDS);
 				if (triggerParam!=null) {
 					running = true;
+					// 空闲次数归零
 					idleTimes = 0;
 					triggerLogIdSet.remove(triggerParam.getLogId());
 

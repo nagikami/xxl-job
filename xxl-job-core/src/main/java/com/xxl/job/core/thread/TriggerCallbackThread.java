@@ -48,7 +48,7 @@ public class TriggerCallbackThread {
     private volatile boolean toStop = false;
     public void start() {
 
-        // valid
+        // valid 验证clients是否初始化完成
         if (XxlJobExecutor.getAdminBizList() == null) {
             logger.warn(">>>>>>>>>>> xxl-job, executor callback config fail, adminAddresses is null.");
             return;
@@ -57,6 +57,9 @@ public class TriggerCallbackThread {
         // callback
         triggerCallbackThread = new Thread(new Runnable() {
 
+            /**
+             * 服务端调用客户端执行任务，客户端执行完成后调用服务端对应的回调函数
+             */
             @Override
             public void run() {
 
@@ -68,6 +71,7 @@ public class TriggerCallbackThread {
 
                             // callback list param
                             List<HandleCallbackParam> callbackParamList = new ArrayList<HandleCallbackParam>();
+                            // 获取当前阻塞队列的所有元素添加到callbackParamList
                             int drainToNum = getInstance().callBackQueue.drainTo(callbackParamList);
                             callbackParamList.add(callback);
 
@@ -163,8 +167,10 @@ public class TriggerCallbackThread {
     private void doCallback(List<HandleCallbackParam> callbackParamList){
         boolean callbackRet = false;
         // callback, will retry if error
+        // 遍历所有的client，发送回调函数执行请求到相应的server
         for (AdminBiz adminBiz: XxlJobExecutor.getAdminBizList()) {
             try {
+                // 调用AdminBizClient的callback
                 ReturnT<String> callbackResult = adminBiz.callback(callbackParamList);
                 if (callbackResult!=null && ReturnT.SUCCESS_CODE == callbackResult.getCode()) {
                     callbackLog(callbackParamList, "<br>----------- xxl-job job callback finish.");
