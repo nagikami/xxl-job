@@ -89,12 +89,12 @@ public class EmbedServer {
                             })
                             .childOption(ChannelOption.SO_KEEPALIVE, true);
 
-                    // bind
+                    // bind 绑定端口，启动监听服务
                     ChannelFuture future = bootstrap.bind(port).sync();
 
                     logger.info(">>>>>>>>>>> xxl-job remoting server start success, nettype = {}, port = {}", EmbedServer.class, port);
 
-                    // start registry
+                    // start registry 注册任务到调度器
                     startRegistry(appname, address);
 
                     // wait util stop
@@ -215,15 +215,19 @@ public class EmbedServer {
                 } else if ("/idleBeat".equals(uri)) {
                     // 请求体json字符串转换为参数对象（json string -> POJO）
                     IdleBeatParam idleBeatParam = GsonTool.fromJson(requestData, IdleBeatParam.class);
+                    // 查询任务对应处理线程是否繁忙
                     return executorBiz.idleBeat(idleBeatParam);
                 } else if ("/run".equals(uri)) {
                     TriggerParam triggerParam = GsonTool.fromJson(requestData, TriggerParam.class);
+                    // 执行调度任务
                     return executorBiz.run(triggerParam);
                 } else if ("/kill".equals(uri)) {
                     KillParam killParam = GsonTool.fromJson(requestData, KillParam.class);
+                    // 终止任务执行线程
                     return executorBiz.kill(killParam);
                 } else if ("/log".equals(uri)) {
                     LogParam logParam = GsonTool.fromJson(requestData, LogParam.class);
+                    // 读取指定任务执行日志
                     return executorBiz.log(logParam);
                 } else {
                     return new ReturnT<String>(ReturnT.FAIL_CODE, "invalid request, uri-mapping("+ uri +") not found.");
@@ -261,6 +265,7 @@ public class EmbedServer {
 
         @Override
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+            // 读写空闲超过90s关闭连接
             if (evt instanceof IdleStateEvent) {
                 ctx.channel().close();      // beat 3N, close if idle
                 logger.debug(">>>>>>>>>>> xxl-job provider netty_http server close an idle channel.");

@@ -32,11 +32,14 @@ public class ExecutorBizImpl implements ExecutorBiz {
 
         // isRunningOrHasQueue
         boolean isRunningOrHasQueue = false;
+        // 获取任务对应处理线程
         JobThread jobThread = XxlJobExecutor.loadJobThread(idleBeatParam.getJobId());
+        // 线程繁忙
         if (jobThread != null && jobThread.isRunningOrHasQueue()) {
             isRunningOrHasQueue = true;
         }
 
+        // 返回任务线程繁忙信息
         if (isRunningOrHasQueue) {
             return new ReturnT<String>(ReturnT.FAIL_CODE, "job thread is running or has trigger queue.");
         }
@@ -135,16 +138,16 @@ public class ExecutorBizImpl implements ExecutorBiz {
                     jobThread = null;
                 }
             } else {
-                // just queue trigger
+                // just queue trigger 旧线程有效，添加任务到阻塞队列
             }
         }
 
-        // replace thread (new or exists invalid) 创建线程执行任务并注册到线程表，终止未执行完的上次调度
+        // replace thread (new or exists invalid) 创建线程执行任务并注册到线程表，终止旧执行线程（handler变更、COVER_EARLY策略应用）
         if (jobThread == null) {
             jobThread = XxlJobExecutor.registJobThread(triggerParam.getJobId(), jobHandler, removeOldReason);
         }
 
-        // push data to queue
+        // push data to queue 添加任务到阻塞队列
         ReturnT<String> pushResult = jobThread.pushTriggerQueue(triggerParam);
         return pushResult;
     }
@@ -153,6 +156,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
     public ReturnT<String> kill(KillParam killParam) {
         // kill handlerThread, and create new one
         JobThread jobThread = XxlJobExecutor.loadJobThread(killParam.getJobId());
+        // 终止任务执行线程
         if (jobThread != null) {
             XxlJobExecutor.removeJobThread(killParam.getJobId(), "scheduling center kill job.");
             return ReturnT.SUCCESS;

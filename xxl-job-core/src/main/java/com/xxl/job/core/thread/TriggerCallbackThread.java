@@ -63,7 +63,7 @@ public class TriggerCallbackThread {
             @Override
             public void run() {
 
-                // normal callback
+                // normal callback 线程未终止，正常回调
                 while(!toStop){
                     try {
                         HandleCallbackParam callback = getInstance().callBackQueue.take();
@@ -82,20 +82,23 @@ public class TriggerCallbackThread {
                         }
                     } catch (Exception e) {
                         if (!toStop) {
+                            // 回调调用错误
                             logger.error(e.getMessage(), e);
                         }
                     }
                 }
 
-                // last callback
+                // last callback 终止时最终回调
                 try {
                     List<HandleCallbackParam> callbackParamList = new ArrayList<HandleCallbackParam>();
+                    // 处理所有未执行回调
                     int drainToNum = getInstance().callBackQueue.drainTo(callbackParamList);
                     if (callbackParamList!=null && callbackParamList.size()>0) {
                         doCallback(callbackParamList);
                     }
                 } catch (Exception e) {
                     if (!toStop) {
+                        // 回调调用错误
                         logger.error(e.getMessage(), e);
                     }
                 }
@@ -114,6 +117,7 @@ public class TriggerCallbackThread {
             public void run() {
                 while(!toStop){
                     try {
+                        // 回调重试
                         retryFailCallbackFile();
                     } catch (Exception e) {
                         if (!toStop) {
@@ -184,6 +188,7 @@ public class TriggerCallbackThread {
             }
         }
         if (!callbackRet) {
+            // 回调未成功，写入回调失败文件
             appendFailCallbackFile(callbackParamList);
         }
     }

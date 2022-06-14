@@ -25,11 +25,12 @@ public class ExecutorRegistryThread {
     private volatile boolean toStop = false;
     public void start(final String appname, final String address){
 
-        // valid
+        // valid 验证处理器名
         if (appname==null || appname.trim().length()==0) {
             logger.warn(">>>>>>>>>>> xxl-job, executor registry config fail, appname is null.");
             return;
         }
+        // 验证管理客户端列表是否正确初始化
         if (XxlJobExecutor.getAdminBizList() == null) {
             logger.warn(">>>>>>>>>>> xxl-job, executor registry config fail, adminAddresses is null.");
             return;
@@ -43,8 +44,10 @@ public class ExecutorRegistryThread {
                 while (!toStop) {
                     try {
                         RegistryParam registryParam = new RegistryParam(RegistryConfig.RegistType.EXECUTOR.name(), appname, address);
+                        // 遍历管理客户端列表
                         for (AdminBiz adminBiz: XxlJobExecutor.getAdminBizList()) {
                             try {
+                                // 向每一个调度器发起执行器注册请求
                                 ReturnT<String> registryResult = adminBiz.registry(registryParam);
                                 if (registryResult!=null && ReturnT.SUCCESS_CODE == registryResult.getCode()) {
                                     registryResult = ReturnT.SUCCESS;
@@ -81,6 +84,7 @@ public class ExecutorRegistryThread {
                     RegistryParam registryParam = new RegistryParam(RegistryConfig.RegistType.EXECUTOR.name(), appname, address);
                     for (AdminBiz adminBiz: XxlJobExecutor.getAdminBizList()) {
                         try {
+                            // 向每一个调度器发起执行器注销请求
                             ReturnT<String> registryResult = adminBiz.registryRemove(registryParam);
                             if (registryResult!=null && ReturnT.SUCCESS_CODE == registryResult.getCode()) {
                                 registryResult = ReturnT.SUCCESS;

@@ -118,7 +118,7 @@ public class XxlJobExecutor  {
             // 遍历server列表
             for (String address: adminAddresses.trim().split(",")) {
                 if (address!=null && address.trim().length()>0) {
-                    // 为每一个server创建一个client
+                    // 为每一个server创建一个管理client
                     AdminBiz adminBiz = new AdminBizClient(address.trim(), accessToken);
 
                     if (adminBizList == null) {
@@ -191,7 +191,7 @@ public class XxlJobExecutor  {
 
         // 将当前线程放入线程表
         JobThread oldJobThread = jobThreadRepository.put(jobId, newJobThread);	// putIfAbsent | oh my god, map's put method return the old value!!!
-        // 若上次调度任未完成，直接终止
+        // 若存在旧线程，直接终止（handler变更、COVER_EARLY策略应用需要终止旧线程）
         if (oldJobThread != null) {
             oldJobThread.toStop(removeOldReason);
             oldJobThread.interrupt();
