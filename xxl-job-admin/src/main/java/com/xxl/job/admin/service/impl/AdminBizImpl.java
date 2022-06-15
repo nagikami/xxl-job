@@ -19,6 +19,7 @@ public class AdminBizImpl implements AdminBiz {
 
     @Override
     public ReturnT<String> callback(List<HandleCallbackParam> callbackParamList) {
+        // 执行回调函数
         return JobCompleteHelper.getInstance().callback(callbackParamList);
     }
 

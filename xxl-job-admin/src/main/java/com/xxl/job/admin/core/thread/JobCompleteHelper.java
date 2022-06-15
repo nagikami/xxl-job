@@ -137,6 +137,7 @@ public class JobCompleteHelper {
 
 	public ReturnT<String> callback(List<HandleCallbackParam> callbackParamList) {
 
+		// 回调线程池处理回调任务
 		callbackThreadPool.execute(new Runnable() {
 			@Override
 			public void run() {

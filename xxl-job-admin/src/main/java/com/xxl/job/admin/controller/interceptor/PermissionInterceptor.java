@@ -41,6 +41,7 @@ public class PermissionInterceptor extends HandlerInterceptorAdapter {
 		}
 
 		if (needLogin) {
+			// 通过cookie判断当前用户是否登录
 			XxlJobUser loginUser = loginService.ifLogin(request, response);
 			if (loginUser == null) {
 				response.setStatus(302);

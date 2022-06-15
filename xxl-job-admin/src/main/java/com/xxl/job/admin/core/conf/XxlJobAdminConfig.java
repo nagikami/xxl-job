@@ -14,7 +14,7 @@ import javax.sql.DataSource;
 import java.util.Arrays;
 
 /**
- * xxl-job config
+ * xxl-job config 调度器后台任务启动入口
  *
  * @author xuxueli 2017-04-28
  */

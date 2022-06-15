@@ -70,6 +70,7 @@ public class ExecutorRegistryThread {
 
                     try {
                         if (!toStop) {
+                            // 注册间隔30s
                             TimeUnit.SECONDS.sleep(RegistryConfig.BEAT_TIMEOUT);
                         }
                     } catch (InterruptedException e) {

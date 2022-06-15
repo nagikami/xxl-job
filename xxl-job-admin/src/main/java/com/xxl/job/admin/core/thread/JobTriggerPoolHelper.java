@@ -78,8 +78,10 @@ public class JobTriggerPoolHelper {
 
         // choose thread pool
         ThreadPoolExecutor triggerPool_ = fastTriggerPool;
+        // 获取任务超时次数
         AtomicInteger jobTimeoutCount = jobTimeoutCountMap.get(jobId);
         if (jobTimeoutCount!=null && jobTimeoutCount.get() > 10) {      // job-timeout 10 times in 1 min
+            // 耗时任务交由慢触发线程池处理
             triggerPool_ = slowTriggerPool;
         }
 
@@ -91,7 +93,7 @@ public class JobTriggerPoolHelper {
                 long start = System.currentTimeMillis();
 
                 try {
-                    // do trigger
+                    // do trigger 触发调度
                     XxlJobTrigger.trigger(jobId, triggerType, failRetryCount, executorShardingParam, executorParam, addressList);
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);

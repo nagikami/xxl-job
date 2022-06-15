@@ -41,11 +41,11 @@ public class XxlJobCompleter {
 
 
     /**
-     * do somethind to finish job
+     * do something to finish job
      */
     private static void finishJob(XxlJobLog xxlJobLog){
 
-        // 1、handle success, to trigger child job
+        // 1、handle success, to trigger child job 任务处理成功，处理子任务
         String triggerChildMsg = null;
         if (XxlJobContext.HANDLE_COCE_SUCCESS == xxlJobLog.getHandleCode()) {
             XxlJobInfo xxlJobInfo = XxlJobAdminConfig.getAdminConfig().getXxlJobInfoDao().loadById(xxlJobLog.getJobId());

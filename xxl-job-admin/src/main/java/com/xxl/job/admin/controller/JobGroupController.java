@@ -85,8 +85,8 @@ public class JobGroupController {
 				return new ReturnT<String>(500, I18nUtil.getString("jobgroup_field_registryList")+I18nUtil.getString("system_unvalid") );
 			}
 
-			String[] addresss = xxlJobGroup.getAddressList().split(",");
-			for (String item: addresss) {
+			String[] address = xxlJobGroup.getAddressList().split(",");
+			for (String item: address) {
 				if (item==null || item.trim().length()==0) {
 					return new ReturnT<String>(500, I18nUtil.getString("jobgroup_field_registryList_unvalid") );
 				}
